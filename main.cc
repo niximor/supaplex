@@ -7,7 +7,7 @@
 #include <chrono>
 #include <thread>
 
-static const int FPS = 35;
+static const int FPS = 40;
 //static const int FPS = 2;
 
 enum GameEvent {
