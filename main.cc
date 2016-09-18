@@ -17,7 +17,8 @@ enum GameEvent {
     EVENT_MOVE_LEFT,
     EVENT_MOVE_RIGHT,
     EVENT_MOVE_NONE,
-    EVENT_BTN_SPECIAL
+    EVENT_BTN_SPECIAL_DOWN,
+    EVENT_BTN_SPECIAL_UP
 };
 
 enum FieldType {
@@ -215,7 +216,7 @@ struct Field {
 
         out += " [" + std::to_string(coords.x) + "x" + std::to_string(coords.y) + "] [";
 
-        bool first = false;
+        bool first = true;
         auto hint_fmt = [&](unsigned int hint, const char *desc){
             if (this->hint & hint) {
                 if (first) {
@@ -261,6 +262,9 @@ public:
     char title[LEVEL_NAME_LENGTH];
 
     bool murphy_alive;
+    bool special_down;
+
+    int end_game_timeout = 8;
 
 public:
     Level(const char *file_name, int level): gravitation(false), freeze_zonks(false), murphy_alive(true) {
@@ -497,10 +501,15 @@ public:
             field.del_hint(HINT_SKIP);
         }
 
-        return murphy_alive;
+        return murphy_alive || (end_game_timeout-- > 0);
     }
 
     void dispatch_event(GameEvent event) {
+        // Do not accept new events if murphy is not alive.
+        if (!murphy_alive) {
+            return;
+        }
+
         switch (event) {
             case EVENT_MOVE_UP:
                 next_move = DIR_UP;
@@ -523,11 +532,15 @@ public:
                 break;
 
             case EVENT_END_GAME:
-                // TODO: Explode Murphy.
+                explode_9(data[data_idx(murphy)], FT_EMPTY);
                 break;
 
-            case EVENT_BTN_SPECIAL:
-                // TODO: Handle better
+            case EVENT_BTN_SPECIAL_DOWN:
+                special_down = true;
+                break;
+
+            case EVENT_BTN_SPECIAL_UP:
+                special_down = false;
                 break;
         }
     }
@@ -710,8 +723,6 @@ protected:
     }
 
     void explode_9(Field &origin, FieldType fill) {
-        origin.set_hint(HINT_EXPLOSION_ORIGIN);
-
         for (int y = origin.coords.y - 1; y <= origin.coords.y + 1; ++y) {
             for (int x = origin.coords.x - 1; x <= origin.coords.x + 1; ++x) {
                 Field &fld = data[data_idx(Point(x, y))];
@@ -730,6 +741,8 @@ protected:
                 }
             }
         }
+
+        origin.set_hint(HINT_EXPLOSION_ORIGIN);
     }
 
     void move_npc(Field &field, Direction dir) {
@@ -934,6 +947,10 @@ public:
 
                         case SDLK_SPACE:
                             keyboard_down[KBD_SPACE] = 0;
+                            break;
+
+                        case SDLK_ESCAPE:
+                            level->dispatch_event(EVENT_END_GAME);
                             break;
                     }
                     break;
