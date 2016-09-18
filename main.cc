@@ -337,7 +337,9 @@ public:
                     fld.set_hint(HINT_WAS_BASE);
                 case FT_EMPTY:
 					// Explode murphy if there is something leaving the field... but only if it is not murphy itself.
-                    if (fld.has_hint(HINT_LEAVING) && !(murphy_fld.has_hint(hint_from_direction(turn_back(next_move))))) {
+                    if (fld.has_hint(HINT_LEAVING) && !(murphy_fld.has_hint(hint_from_direction(turn_back(next_move))))
+                            && !special_down)
+                    {
                         explode_9(fld, FT_BASE);
                     } else {
                         allow_move = true;
@@ -359,6 +361,10 @@ public:
 				case FT_ZONK:
 				case FT_ORANGE_DISK:
 				case FT_YELLOW_DISK:
+                    if (special_down) {
+                        break;
+                    }
+
 					// Crash to falling objects.
 					if (fld.has_hint(HINT_FALL)) {
 						explode_9(fld, FT_BASE);
@@ -395,19 +401,24 @@ public:
 
             if (allow_move) {
                 Field &origin = data[data_idx(murphy)];
-                origin.type = FT_EMPTY;
-                origin.set_hint(HINT_LEAVING | HINT_SKIP);
-                origin.del_hint(HINT_FROM_BOTTOM | HINT_FROM_TOP | HINT_FROM_RIGHT | HINT_FROM_LEFT | HINT_WAS_INFOTRON | HINT_WAS_BASE | HINT_WAS_RED_DISK);
+                if (!special_down) {
+                    origin.type = FT_EMPTY;
+                    origin.set_hint(HINT_LEAVING | HINT_SKIP);
+                    origin.del_hint(HINT_FROM_BOTTOM | HINT_FROM_TOP | HINT_FROM_RIGHT | HINT_FROM_LEFT | HINT_WAS_INFOTRON | HINT_WAS_BASE | HINT_WAS_RED_DISK);
 
-                fld.type = FT_MURPHY;
-				fld.set_hint(hint_from_direction(next_move) | HINT_SKIP);
+                    fld.type = FT_MURPHY;
+    				fld.set_hint(hint_from_direction(next_move) | HINT_SKIP);
 
-				if (origin.has_hint(HINT_PUSH)) {
-					fld.set_hint(HINT_PUSH);
-					origin.del_hint(HINT_PUSH);
-				}
+    				if (origin.has_hint(HINT_PUSH)) {
+    					fld.set_hint(HINT_PUSH);
+    					origin.del_hint(HINT_PUSH);
+    				}
 
-                murphy = next;
+                    murphy = next;
+                } else {
+                    fld.type = FT_EMPTY;
+                    fld.set_hint(HINT_SKIP | HINT_LEAVING);
+                }
             }
         }
         next_move = DIR_NONE;
@@ -419,7 +430,7 @@ public:
 			}
 
 			if (field.has_hint(HINT_LEAVING)) {
-				field.del_hint(HINT_LEAVING);
+    		    field.del_hint(HINT_LEAVING | HINT_WAS_BASE | HINT_WAS_INFOTRON | HINT_WAS_RED_DISK);
 			}
 		}
 
@@ -993,6 +1004,12 @@ public:
             keyboard_down[KBD_RIGHT] = 2;
         }
 
+        if (keyboard_down[KBD_SPACE]) {
+            level->dispatch_event(EVENT_BTN_SPECIAL_DOWN);
+        } else {
+            level->dispatch_event(EVENT_BTN_SPECIAL_UP);
+        }
+
         return true;
     }
 
@@ -1070,6 +1087,21 @@ public:
                         SDL_BlitSurface(fixed, &source_red_disk, screen, &dest);
                     } else {
                         SDL_BlitSurface(fixed, &source_empty, screen, &dest);
+                    }
+
+                    need_draw = true;
+                } else if (field.has_hint(HINT_WAS_INFOTRON | HINT_WAS_BASE | HINT_WAS_RED_DISK)) {
+                    // Draw remote eating animation
+                    // 22, 23, 24
+                    source_surface = moving;
+                    source.x = animation_frame * FIELD_WIDTH;
+
+                    if (field.has_hint(HINT_WAS_BASE)) {
+                        source.y = 21 * FIELD_HEIGHT;
+                    } else if (field.has_hint(HINT_WAS_INFOTRON)) {
+                        source.y = 22 * FIELD_HEIGHT;
+                    } else if (field.has_hint(HINT_WAS_RED_DISK)) {
+                        source.y = 23 * FIELD_HEIGHT;
                     }
 
                     need_draw = true;
