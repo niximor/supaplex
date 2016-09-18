@@ -31,23 +31,23 @@ enum FieldType {
     FT_BORDER,
     FT_EXIT,
     FT_ORANGE_DISK,
-    FT_PORTAL_EAST,
-    FT_PORTAL_SOUTH,
-    FT_PORTAL_WEST,
-    FT_PORTAL_NORTH,
-    FT_PORTAL_EAST_2,
-    FT_PORTAL_SOUTH_2,
-    FT_PORTAL_WEST_2,
-    FT_PORTAL_NORTH_2,
+    FT_PORT_EAST,
+    FT_PORT_SOUTH,
+    FT_PORT_WEST,
+    FT_PORT_NORTH,
+    FT_PORT_EAST_2,
+    FT_PORT_SOUTH_2,
+    FT_PORT_WEST_2,
+    FT_PORT_NORTH_2,
     FT_SNIK_SNAK,
     FT_YELLOW_DISK,
     FT_TERMINAL,
     FT_RED_DISK,
-    FT_PORTAL_NS,
-    FT_PORTAL_WE,
-    FT_PORTAL_CROSS,
-    FT_STARS,
+    FT_PORT_NS,
+    FT_PORT_WE,
+    FT_PORT_CROSS,
     FT_ELECTRON,
+    FT_BUG,
     FT_CHIP_WE_1,
     FT_CHIP_WE_2,
     FT_SENSOR,
@@ -136,8 +136,8 @@ struct Field {
             case FT_YELLOW_DISK:
             case FT_TERMINAL:
             case FT_RED_DISK:
-            case FT_STARS:
             case FT_ELECTRON:
+            case FT_BUG:
             case FT_CHIP_WE_1:
             case FT_CHIP_WE_2:
             case FT_CHIP_NS_1:
@@ -158,7 +158,7 @@ struct Field {
             case FT_ORANGE_DISK:
             case FT_YELLOW_DISK:
             case FT_SNIK_SNAK:
-            case FT_STARS:
+            case FT_ELECTRON:
             case FT_MURPHY:
                 return true;
 
@@ -171,7 +171,7 @@ struct Field {
      * Field type that is set after the explosion.
      */
     FieldType explodes_into() {
-        if (type == FT_STARS) {
+        if (type == FT_ELECTRON) {
             return FT_INFOTRON;
         } else {
             return FT_EMPTY;
@@ -209,8 +209,8 @@ struct Field {
             case FT_YELLOW_DISK: out = "Y_DISK  "; break;
             case FT_TERMINAL:    out = "TERMINAL"; break;
             case FT_RED_DISK:    out = "R_DISK  "; break;
-            case FT_STARS:       out = "STARS   "; break;
-            case FT_ELECTRON:    out = "ELECTRON"; break;
+            case FT_ELECTRON:       out = "STARS   "; break;
+            case FT_BUG:    out = "ELECTRON"; break;
             default:             out = "FIXTURE "; break;
         }
 
@@ -454,7 +454,7 @@ public:
             }
 
             // Remove hints from Murphy's movement.
-            if (field.type != FT_SNIK_SNAK && field.type != FT_STARS) {
+            if (field.type != FT_SNIK_SNAK && field.type != FT_ELECTRON) {
                 field.del_hint(HINT_FROM_BOTTOM | HINT_FROM_TOP | HINT_FROM_RIGHT | HINT_FROM_LEFT);
             }
 
@@ -496,7 +496,7 @@ public:
 					break;
 
 				case FT_SNIK_SNAK:
-				case FT_STARS:
+				case FT_ELECTRON:
 					move_npc(field, dir);
 					break;
 
@@ -694,7 +694,7 @@ protected:
                 }
                 break;
 
-            case FT_STARS:
+            case FT_ELECTRON:
                 if (fld.has_hint(HINT_FALL)) {
                     explode_9(below, FT_INFOTRON);
                 }
@@ -1166,7 +1166,7 @@ public:
                                 source.y = (9 + turn_offset) * FIELD_HEIGHT;
                                 break;
 
-                            case FT_STARS:
+                            case FT_ELECTRON:
                                 break;
 
                             default:
